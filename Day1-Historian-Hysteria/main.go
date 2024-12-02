@@ -23,11 +23,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Part 1
 	sl.sortLists()
 	sl.calcDist()
-
 	totalDist := sl.totalDist()
-	fmt.Printf("Total Distance is '%d'", totalDist)
+	fmt.Printf("Total Distance is '%d'\n", totalDist)
+
+	// Part 2
+	similarityScore := sl.calcSimilarityScore()
+	fmt.Printf("Similarity Score is '%d'\n", similarityScore)
 }
 
 func (sl *SignificantLocations) loadData(filename string) error {
@@ -89,4 +94,23 @@ func (sl *SignificantLocations) totalDist() int {
 		totalDist += sl.distApart[i]
 	}
 	return totalDist
+}
+
+func (sl *SignificantLocations) calcSimilarityScore() int {
+	similarityScore := 0
+	for i := range sl.listOne {
+		occurrences := getOccurrences(sl.listTwo, sl.listOne[i])
+		similarityScore += sl.listOne[i] * occurrences
+	}
+	return similarityScore
+}
+
+func getOccurrences(list []int, item int) int {
+	occurrences := 0
+	for i := range list {
+		if list[i] == item {
+			occurrences++
+		}
+	}
+	return occurrences
 }

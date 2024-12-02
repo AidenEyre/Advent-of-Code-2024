@@ -8,3 +8,4 @@ https://adventofcode.com/2024
 ### Day 1 - Historian Hysteria
 
 Part 1 answer: Total Distance is '1970720'
+Part 2 answer: Similarity Score is '17191599'
