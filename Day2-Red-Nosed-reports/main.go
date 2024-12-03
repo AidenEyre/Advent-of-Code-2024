@@ -52,29 +52,41 @@ func loadDataIntoSlice(filename string) ([]string, error) {
 }
 
 func isSafe(report string) (bool, error) {
-	shouldIncrease := false
 	openedReport, err := stringToIntSlice(report)
 	if err != nil {
 		return false, fmt.Errorf("failed to analyze report: %w", err)
 	}
 
+	shouldIncrease := false
 	if (openedReport[0] - openedReport[1]) > 0 {
 		shouldIncrease = true
 	}
 
 	for i := 0; i < len(openedReport)-1; i++ {
-		absDiff, isIncreasing := absAndSign(openedReport[i], openedReport[i+1])
+		itemOne := openedReport[i]
+		itemTwo := openedReport[i+1]
+		isSafe := analyzePair(itemOne, itemTwo, shouldIncrease)
 
-		if absDiff > 3 || absDiff == 0 {
-			return false, nil
-		}
-
-		if isIncreasing != shouldIncrease {
+		if !isSafe {
 			return false, nil
 		}
 	}
 
 	return true, nil
+}
+
+func analyzePair(a, b int, shouldIncrease bool) bool {
+	absDiff, isIncreasing := absAndSign(a, b)
+
+	if absDiff > 3 || absDiff == 0 {
+		return false
+	}
+
+	if isIncreasing != shouldIncrease {
+		return false
+	}
+
+	return true
 }
 
 func stringToIntSlice(input string) ([]int, error) {
