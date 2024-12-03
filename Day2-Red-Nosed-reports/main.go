@@ -18,7 +18,11 @@ func main() {
 	}
 
 	for i := range reports {
-		safe, err := isSafe(reports[i])
+		report, err := stringToIntSlice(reports[i])
+		if err != nil {
+			panic(err)
+		}
+		safe, err := isSafe(report, false)
 		if err != nil {
 			panic(err)
 		}
@@ -51,28 +55,55 @@ func loadDataIntoSlice(filename string) ([]string, error) {
 	return dataSlice, nil
 }
 
-func isSafe(report string) (bool, error) {
-	openedReport, err := stringToIntSlice(report)
-	if err != nil {
-		return false, fmt.Errorf("failed to analyze report: %w", err)
-	}
-
+func isSafe(report []int, isRecursivePass bool) (bool, error) {
+	var err error
 	shouldIncrease := false
-	if (openedReport[0] - openedReport[1]) > 0 {
+	if (report[0] - report[1]) > 0 {
 		shouldIncrease = true
 	}
 
-	for i := 0; i < len(openedReport)-1; i++ {
-		itemOne := openedReport[i]
-		itemTwo := openedReport[i+1]
+	for i := 0; i < len(report)-1; i++ {
+		itemOne := report[i]
+		itemTwo := report[i+1]
 		isSafe := analyzePair(itemOne, itemTwo, shouldIncrease)
 
-		if !isSafe {
-			return false, nil
+		if isSafe {
+			continue
+		}
+
+		if !isRecursivePass {
+			isSafe, err = testToleration(report, i, i+1)
+			if err != nil {
+				return false, fmt.Errorf("failed to analyze report: %w", err)
+			}
+		}
+		if isSafe {
+			return true, nil
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func testToleration(report []int, firstIndex, secondIndex int) (bool, error) {
+	safe := false
+	var err error
+
+	// I gave up. After hours of working at this, I realized, I was missing the
+	// case where removing the first item would solve the error in item 2/3.
+	// For example, `57 56 57 59 60 63 64 65`. This is because it was assuming
+	// it was counting down... It's late, so I'm brute forcing!
+	for i := range report {
+		safe, err = isSafe(removeAtIndex(report, i), true)
+		if err != nil {
+			return false, err
+		}
+		if safe {
+			return true, nil
 		}
 	}
 
-	return true, nil
+	return false, nil
 }
 
 func analyzePair(a, b int, shouldIncrease bool) bool {
@@ -109,4 +140,10 @@ func absAndSign(a, b int) (int, bool) {
 		diff = -diff
 	}
 	return diff, isIncreasing
+}
+
+func removeAtIndex(slice []int, s int) []int {
+	newSlice := make([]int, len(slice))
+	copy(newSlice, slice)
+	return append(newSlice[:s], newSlice[s+1:]...)
 }
