@@ -9,19 +9,21 @@ import (
 )
 
 func main() {
-	results := 0
 	instructions, err := loadDataIntoSlice("puzzle-data.txt")
 	if err != nil {
 		panic(err)
 	}
 
+	var combinedInstructions [][2]int
 	for i := range instructions {
 		scrapedInstructions, err := scrapeInstructionPairs(instructions[i])
 		if err != nil {
 			panic(err)
 		}
-		results += runInstructions(scrapedInstructions)
+		combinedInstructions = append(combinedInstructions, scrapedInstructions...)
 	}
+	results := runInstructions(combinedInstructions)
+
 	fmt.Printf("Instruction results are: '%d'\n", results)
 }
 
@@ -47,23 +49,38 @@ func loadDataIntoSlice(filename string) ([]string, error) {
 }
 
 func scrapeInstructionPairs(corruptedCode string) ([][2]int, error) {
-	r := regexp.MustCompile(`mul\((\d+),(\d+)\)`)
+	r := regexp.MustCompile(`mul\((\d+),(\d+)\)|do\(\)|don't\(\)`)
 	matches := r.FindAllStringSubmatch(corruptedCode, -1)
 
 	var instructionPairs [][2]int
-	var matchedIntPair [2]int
 	var err error
+	var pair [2]int
 	for _, match := range matches {
-		if len(match) >= 3 {
-			matchedIntPair, err = convertMatchToInt(match)
-			instructionPairs = append(instructionPairs, matchedIntPair)
-		}
+		pair, err = handleMatch(match)
 		if err != nil {
 			return [][2]int{}, fmt.Errorf("failed to scrape instruction pairs: %w", err)
 		}
+		instructionPairs = append(instructionPairs, pair)
 	}
 
 	return instructionPairs, nil
+}
+
+func handleMatch(match []string) ([2]int, error) {
+	var err error
+	var matchedIntPair [2]int
+	if match[0] == "do()" {
+		return [2]int{0, 0}, nil
+	} else if match[0] == "don't()" {
+		return [2]int{-1, -1}, nil
+	} else if len(match) >= 3 && match[1] != "" && match[2] != "" {
+		matchedIntPair, err = convertMatchToInt(match)
+		return matchedIntPair, nil
+	}
+	if err != nil {
+		return [2]int{}, fmt.Errorf("failed to handle match: %w", err)
+	}
+	return [2]int{}, fmt.Errorf("failed to handle match")
 }
 
 func convertMatchToInt(match []string) ([2]int, error) {
@@ -79,8 +96,18 @@ func convertMatchToInt(match []string) ([2]int, error) {
 }
 
 func runInstructions(instructions [][2]int) int {
+	enabled := true
 	result := 0
 	for i := range instructions {
+		if instructions[i][0] == 0 && instructions[i][1] == 0 {
+			enabled = true
+		}
+		if instructions[i][0] == -1 && instructions[i][1] == -1 {
+			enabled = false
+		}
+		if !enabled {
+			continue
+		}
 		result += (instructions[i][0] * instructions[i][1])
 	}
 	return result
