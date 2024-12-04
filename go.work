@@ -3,4 +3,5 @@ go 1.22.3
 use (
 	./Day1-Historian-Hysteria
 	./Day2-Red-Nosed-reports
+	./Day3-Mull-It-Over
 )
