@@ -34,7 +34,7 @@ func main() {
 		widthAndLength: len(wordsearch),
 		Word:           "XMAS",
 	}
-	wordsFound := solver.searchForWords()
+	wordsFound := solver.searchForWords(solver.Word[0], "regular")
 
 	fmt.Printf("WordsearchSolver5000 found '%d' instances of '%s'", wordsFound, solver.Word)
 }
@@ -80,9 +80,8 @@ func (ws *WordsearchSolver5000) inBoundsFromPoint(x, y int, direction string) bo
 	return true
 }
 
-func (ws *WordsearchSolver5000) searchForWords() int {
+func (ws *WordsearchSolver5000) searchForWords(startChar byte, searchType string) int {
 	totalWords := 0
-	startChar := ws.Word[0]
 
 	for x := range ws.wordMatrix {
 		for y := range ws.wordMatrix[x] {
@@ -90,24 +89,29 @@ func (ws *WordsearchSolver5000) searchForWords() int {
 				continue
 			}
 
-			totalWords += ws.searchFromPoint(x, y)
+			if searchType == "regular" {
+				totalWords += ws.searchStraightFromPoint(x, y)
+			}
+			if searchType == "cross" {
+				totalWords += ws.searchCrossFromPoint(x, y)
+			}
 		}
 	}
 
 	return totalWords
 }
 
-func (ws *WordsearchSolver5000) searchFromPoint(x, y int) int {
+func (ws *WordsearchSolver5000) searchStraightFromPoint(x, y int) int {
 	count := 0
 	for direction := range directions {
-		if ws.inBoundsFromPoint(x, y, direction) && ws.checkForMatch(x, y, direction) {
+		if ws.inBoundsFromPoint(x, y, direction) && ws.checkForMatchStraight(x, y, direction) {
 			count++
 		}
 	}
 	return count
 }
 
-func (ws *WordsearchSolver5000) checkForMatch(x, y int, direction string) bool {
+func (ws *WordsearchSolver5000) checkForMatchStraight(x, y int, direction string) bool {
 	steps := len(ws.Word)
 	dir, exists := directions[direction]
 	if !exists {
@@ -126,4 +130,8 @@ func (ws *WordsearchSolver5000) checkForMatch(x, y int, direction string) bool {
 	}
 	// fmt.Println("HERE")
 	return true
+}
+
+func (ws *WordsearchSolver5000) searchCrossFromPoint(x, y int) int {
+	return 0
 }
