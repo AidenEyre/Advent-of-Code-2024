@@ -5,4 +5,5 @@ use (
 	./Day2-Red-Nosed-reports
 	./Day3-Mull-It-Over
 	./day4-Ceres-Search
+	./day5-Print-Queue
 )
