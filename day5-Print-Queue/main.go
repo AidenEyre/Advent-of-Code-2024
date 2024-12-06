@@ -13,8 +13,11 @@ import (
 func main() {
 	start := time.Now() // get time
 
-	result := 0
+	validUpdatesResult := 0
+	correctedUpdatesResult := 0
 	validUpdates := [][]int{}
+	correctedUpdates := [][]int{}
+
 	rules, err := loadDataIntoSlice("puzzle-data-rules.txt", "|")
 	if err != nil {
 		panic(err)
@@ -32,13 +35,21 @@ func main() {
 		if isValid {
 			validUpdates = append(validUpdates, updates[i])
 		}
+		if !isValid {
+			correctedUpdate := correctBadUpdates(topologicalOrder, updates[i])
+			correctedUpdates = append(correctedUpdates, correctedUpdate)
+		}
 	}
 
 	for i := range validUpdates {
-		result += getMiddlePageNumber(validUpdates[i])
+		validUpdatesResult += getMiddlePageNumber(validUpdates[i])
+	}
+	for i := range correctedUpdates {
+		correctedUpdatesResult += getMiddlePageNumber(correctedUpdates[i])
 	}
 
-	fmt.Printf("Sum of middle numbers in valid updates is: '%d'\n", result)
+	fmt.Printf("Sum of middle numbers in valid updates is: '%d'\n", validUpdatesResult)
+	fmt.Printf("Sum of middle numbers in corrected updates is: '%d'\n", correctedUpdatesResult)
 
 	elapsed := time.Since(start) // Calculate elapsed time
 	fmt.Printf("Execution time: %d ms\n", elapsed.Milliseconds())
@@ -178,4 +189,24 @@ func getMiddlePageNumber(pages []int) int {
 	numPages := len(pages)
 	middleIndex := numPages / 2
 	return pages[middleIndex]
+}
+
+////// Part Two Functions
+
+func correctBadUpdates(topologicalOrder, update []int) []int {
+	corrected := []int{}
+
+	for i := range topologicalOrder {
+		item := topologicalOrder[i]
+
+		if !slices.Contains(update, item) {
+			continue
+		}
+		corrected = append(corrected, item)
+		if len(corrected) == len(update) {
+			break
+		}
+	}
+
+	return corrected
 }
