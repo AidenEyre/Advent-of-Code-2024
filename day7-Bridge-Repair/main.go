@@ -51,8 +51,11 @@ func main() {
 }
 
 func loadDataIntoSlice(filename string) ([]int, [][]int, error) {
-	var numbers = [][]int{}
-	var targets = []int{}
+	var numbers = make([][]int, 0, 850)
+	for i := range numbers {
+		numbers[i] = make([]int, 0, 30)
+	}
+	var targets = make([]int, 0, 850)
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -72,28 +75,38 @@ func loadDataIntoSlice(filename string) ([]int, [][]int, error) {
 		numbers = append(numbers, numberSet)
 	}
 
-	return targets, numbers, nil
+	return targets, numbers, scanner.Err()
 }
 
 func stringSliceToInt(input []string) []int {
 	intSlice := make([]int, len(input))
-	for i := range input {
-		converted, _ := strconv.Atoi(input[i])
-		intSlice[i] = converted
+	for i, str := range input {
+		intSlice[i], _ = strconv.Atoi(str)
 	}
 	return intSlice
 }
 
 func (c *calibrator3000) calibrate() {
 	results := make(chan int, len(c.targets))
+	work := make(chan int, len(c.targets))
+	workerCount := 8 // my # of perf cores
+
+	for w := 0; w < workerCount; w++ {
+		go func() {
+			for i := range work {
+				go c.concurrentCalibrate(c.targets[i], c.numbers[i], results)
+			}
+		}()
+	}
 
 	for i := range c.targets {
-		go c.concurrentCalibrate(c.targets[i], c.numbers[i], results)
+		work <- i
 	}
+	close(work)
+
 	for range c.targets {
 		c.totalCalibrationResult += <-results
 	}
-
 	close(results)
 }
 
@@ -113,8 +126,9 @@ func (c *calibrator3000) recEvaluate(numbers []int, target, index, value int) bo
 		return false
 	}
 
-	for i := range c.availableOperators {
-		nextVal := ops[c.availableOperators[i]](value, numbers[index])
+	for _, operator := range c.availableOperators {
+		op := ops[operator]
+		nextVal := op(value, numbers[index])
 		if c.recEvaluate(numbers, target, index+1, nextVal) {
 			return true
 		}
