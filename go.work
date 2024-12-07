@@ -6,4 +6,5 @@ use (
 	./Day3-Mull-It-Over
 	./day4-Ceres-Search
 	./day5-Print-Queue
+	./day6-Guard-Gallivant
 )
