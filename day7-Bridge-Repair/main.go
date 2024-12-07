@@ -133,8 +133,3 @@ func (c *calibrator3000) recEvaluate(numbers []int, target, index, value int) bo
 
 	return false
 }
-
-func concatInts(a, b int) int {
-	concatenated, _ := strconv.Atoi(strconv.Itoa(a) + strconv.Itoa(b))
-	return concatenated
-}
