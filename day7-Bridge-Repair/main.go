@@ -85,16 +85,32 @@ func stringSliceToInt(input []string) []int {
 }
 
 func (c *calibrator3000) calibrate() {
+	results := make(chan int, len(c.targets))
+
 	for i := range c.targets {
-		if c.recEvaluate(c.numbers[i], c.targets[i], 1, c.numbers[i][0]) {
-			c.totalCalibrationResult += c.targets[i]
-		}
+		go c.concurrentCalibrate(c.targets[i], c.numbers[i], results)
+	}
+	for range c.targets {
+		c.totalCalibrationResult += <-results
+	}
+
+	close(results)
+}
+
+func (c *calibrator3000) concurrentCalibrate(target int, numbers []int, results chan int) {
+	if c.recEvaluate(numbers, target, 1, numbers[0]) {
+		results <- target
+	} else {
+		results <- 0
 	}
 }
 
 func (c *calibrator3000) recEvaluate(numbers []int, target, index, value int) bool {
-	if index == len(numbers) { // keep an eye on this. I think it might need a -1?
+	if index == len(numbers) {
 		return value == target
+	}
+	if value > target {
+		return false
 	}
 
 	for i := range c.availableOperators {
