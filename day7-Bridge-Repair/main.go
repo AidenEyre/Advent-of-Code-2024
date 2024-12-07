@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -13,8 +14,9 @@ var ops = map[string]func(int, int) int{
 	"+": func(a, b int) int { return a + b },
 	"*": func(a, b int) int { return a * b },
 	"||": func(a, b int) int {
-		concatenated, _ := strconv.Atoi(strconv.Itoa(a) + strconv.Itoa(b))
-		return concatenated
+		digits := int(math.Log10(float64(b)) + 1)
+		result := a*int(math.Pow(10, float64(digits))) + b
+		return result
 	},
 }
 
