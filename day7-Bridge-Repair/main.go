@@ -11,10 +11,11 @@ import (
 
 var ops = map[string]func(int, int) int{
 	"+": func(a, b int) int { return a + b },
-	"-": func(a, b int) int { return a - b },
 	"*": func(a, b int) int { return a * b },
-	"/": func(a, b int) int { return a / b },
-	"%": func(a, b int) int { return a % b },
+	"||": func(a, b int) int {
+		concatenated, _ := strconv.Atoi(strconv.Itoa(a) + strconv.Itoa(b))
+		return concatenated
+	},
 }
 
 type calibrator3000 struct {
@@ -29,7 +30,7 @@ func main() {
 
 	calibrator := calibrator3000{
 		totalCalibrationResult: 0,
-		availableOperators:     []string{"+", "*"},
+		availableOperators:     []string{"+", "*", "||"},
 	}
 
 	targets, numbers, err := loadDataIntoSlice("puzzle-data.txt")
@@ -39,10 +40,6 @@ func main() {
 	calibrator.targets = targets
 	calibrator.numbers = numbers
 	calibrator.calibrate()
-
-	for i := range targets {
-		fmt.Printf("%d: %v\n", calibrator.targets[i], calibrator.numbers[i])
-	}
 
 	fmt.Printf("Total calibration result: '%d'\n", calibrator.totalCalibrationResult)
 
@@ -122,17 +119,24 @@ func (c *calibrator3000) recEvaluate(numbers []int, target, index, value int) bo
 	if index == len(numbers) {
 		return value == target
 	}
-	if value > target {
-		return false
-	}
 
 	for _, operator := range c.availableOperators {
 		op := ops[operator]
 		nextVal := op(value, numbers[index])
+
+		if nextVal > target {
+			continue
+		}
+
 		if c.recEvaluate(numbers, target, index+1, nextVal) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func concatInts(a, b int) int {
+	concatenated, _ := strconv.Atoi(strconv.Itoa(a) + strconv.Itoa(b))
+	return concatenated
 }
