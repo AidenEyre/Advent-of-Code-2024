@@ -16,9 +16,10 @@ var directions = [4][2]int{
 }
 
 type Lab struct {
-	labMap                 [][]string
-	guardCoords            []int
-	distinctGuardLocations int
+	labMap                       [][]string
+	guardCoords                  []int
+	distinctGuardLocations       int
+	distinctObstructionLocations int
 }
 
 func main() {
@@ -33,9 +34,10 @@ func main() {
 		panic(err)
 	}
 	lab.findGuard()
-	lab.walkGuard()
+	lab.WalkGuard(0, false)
 
 	fmt.Printf("Number of distinct guard locations: %d\n", lab.distinctGuardLocations)
+	fmt.Printf("Number of distinct obstruction locations: %d\n", lab.distinctObstructionLocations)
 
 	elapsed := time.Since(start) // Calculate elapsed time
 	fmt.Printf("Execution time: %d ms\n", elapsed.Milliseconds())
@@ -77,33 +79,6 @@ func (l *Lab) findGuard() {
 	}
 }
 
-func (l *Lab) walkGuard() {
-	i := 0
-
-	for {
-		dir := directions[i%len(directions)]
-		row := l.guardCoords[0] + dir[0]
-		column := l.guardCoords[1] + dir[1]
-
-		if !l.inBoundsFromPoint(row, column) {
-			return
-		}
-
-		nextLocation := l.labMap[row][column]
-		if nextLocation == "#" {
-			i++
-			continue
-		}
-		if nextLocation == "." {
-			l.distinctGuardLocations++
-			l.labMap[row][column] = "X"
-		}
-
-		l.guardCoords[0] = row
-		l.guardCoords[1] = column
-	}
-}
-
 func (l *Lab) inBoundsFromPoint(newX, newY int) bool {
 	min := 0
 	max := len(l.labMap) - 1
@@ -112,4 +87,73 @@ func (l *Lab) inBoundsFromPoint(newX, newY int) bool {
 		return false
 	}
 	return true
+}
+
+///// Part 2
+//
+// Not sure how I feel about this, but it runs under 50ms on my machine. Couldn't
+// get it to track loop on only the xCount so I left both.
+//
+// It's messy today. It's also Friday, I'm calling it.
+
+func (l *Lab) WalkGuard(dirCount int, simulated bool) string {
+	steps := 0
+	xCount := 0
+
+	for {
+		dir := directions[dirCount%len(directions)]
+		row := l.guardCoords[0] + dir[0]
+		column := l.guardCoords[1] + dir[1]
+
+		if !l.inBoundsFromPoint(row, column) {
+			return ""
+		}
+
+		if xCount > 1000 {
+			return "loop"
+		}
+		if steps > 7000 {
+			return "loop"
+		}
+
+		nextLocation := l.labMap[row][column]
+		if nextLocation == "#" {
+			dirCount++
+			continue
+		}
+		if !simulated && nextLocation == "." {
+			copyLab := l.copyLab()
+			copyLab.labMap[row][column] = "#"
+			loop := copyLab.WalkGuard(dirCount, true)
+			if loop == "loop" {
+				l.distinctObstructionLocations++
+			}
+		}
+		if nextLocation == "." && !simulated {
+			xCount = 0
+			l.distinctGuardLocations++
+			l.labMap[row][column] = "X"
+		}
+		if nextLocation == "X" && simulated {
+			xCount++
+		}
+
+		l.guardCoords[0] = row
+		l.guardCoords[1] = column
+		steps++
+	}
+}
+
+func (l *Lab) copyLab() Lab {
+	mapCopy := make([][]string, len(l.labMap))
+	copy(mapCopy, l.labMap)
+	guardCoordsCopy := make([]int, 2)
+	copy(guardCoordsCopy, l.guardCoords)
+
+	labCopy := Lab{
+		labMap:      mapCopy,
+		guardCoords: guardCoordsCopy,
+	}
+
+	return labCopy
 }
