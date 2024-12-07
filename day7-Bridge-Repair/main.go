@@ -66,23 +66,19 @@ func loadDataIntoSlice(filename string) ([]int, [][]int, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		splitTargetFromNumbers := strings.Split(line, ": ")
+		splitTargetFromNumbers := strings.SplitN(line, ": ", 2)
 		target, _ := strconv.Atoi(splitTargetFromNumbers[0])
-		numberSet := stringSliceToInt(strings.Split(splitTargetFromNumbers[1], " "))
+		numberStrs := strings.Fields(splitTargetFromNumbers[1])
+		numberSet := make([]int, len(numberStrs))
+		for i, str := range numberStrs {
+			numberSet[i], _ = strconv.Atoi(str)
+		}
 
 		targets = append(targets, target)
 		numbers = append(numbers, numberSet)
 	}
 
 	return targets, numbers, scanner.Err()
-}
-
-func stringSliceToInt(input []string) []int {
-	intSlice := make([]int, len(input))
-	for i, str := range input {
-		intSlice[i], _ = strconv.Atoi(str)
-	}
-	return intSlice
 }
 
 func (c *calibrator3000) calibrate() {
