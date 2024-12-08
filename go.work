@@ -8,4 +8,5 @@ use (
 	./day5-Print-Queue
 	./day6-Guard-Gallivant
 	./day7-Bridge-Repair
+	./day8-Resonant-Collinearity
 )
