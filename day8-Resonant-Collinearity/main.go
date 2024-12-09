@@ -10,21 +10,20 @@ import (
 	"time"
 )
 
-// This feels rough. I spent too much time stuck on something silly though,
-// calling it.
+// This is an ugly solution... I spent too much time stuck on something silly
+// though, calling it good.
 
 type cityScanner struct {
-	cityMap                 [][]string
-	antennaCoords           map[string][][]int
-	uniqueAntinodeLocations int
+	cityMap        [][]string
+	antennaCoords  map[string][][]int
+	antinodeCoords [][]int
 }
 
 func main() {
 	start := time.Now() // get time
 
 	scanner := cityScanner{
-		antennaCoords:           make(map[string][][]int),
-		uniqueAntinodeLocations: 0,
+		antennaCoords: make(map[string][][]int),
 	}
 
 	cityMap, err := loadDataIntoSlice("puzzle-data.txt")
@@ -34,10 +33,7 @@ func main() {
 	scanner.cityMap = cityMap
 	scanner.logAntennaLocations()
 	scanner.findUniqueAntinodes()
-
-	// scanner.printAntennaMap()
-	// scanner.printCityMap()
-	fmt.Printf("Unique antinode locations: '%d'\n", scanner.uniqueAntinodeLocations)
+	fmt.Printf("Unique antinode locations: '%d'\n", len(scanner.antinodeCoords))
 
 	elapsed := time.Since(start) // Calculate elapsed time
 	fmt.Printf("Execution time: %d ms\n", elapsed.Milliseconds())
@@ -77,8 +73,6 @@ func (cs *cityScanner) logAntennaLocations() {
 }
 
 func (cs *cityScanner) findUniqueAntinodes() {
-	antinodeCoords := [][]int{}
-
 	for _, antennas := range cs.antennaCoords {
 		for i := range antennas {
 			for j := range antennas {
@@ -86,75 +80,76 @@ func (cs *cityScanner) findUniqueAntinodes() {
 				if slices.Equal(a1, a2) {
 					continue
 				}
-				antinodes := findPotentialAntinodeLocations(a1, a2)
-				for i := range antinodes {
-					if cs.inBounds(antinodes[i]) && !containsCoordsSlice(antinodeCoords, antinodes[i]) {
-						antinodeCoords = append(antinodeCoords, antinodes[i])
-						// fmt.Printf("Antenna: %s potential: (%d,%d)\n", key, antinodes[i][0], antinodes[i][1])
-						cs.uniqueAntinodeLocations++
-					}
-				}
+				cs.calculateAntinodeLocations(a1, a2)
 			}
 		}
 	}
 }
 
-func findPotentialAntinodeLocations(a1, a2 []int) [][]int {
+func (cs *cityScanner) calculateAntinodeLocations(a1, a2 []int) {
 	movementX := math.Abs(float64(a1[0] - a2[0]))
 	movementY := math.Abs(float64(a1[1] - a2[1]))
+	invalidCount := 0
+	multiplier := 1
 
-	// I don't like how I did this, there's got to be a better way. I spent too
-	// much time on this today tough
-	if a2[0] >= a1[0] && a2[1] <= a1[1] {
-		return [][]int{
-			{
-				a2[0] + int(movementX),
-				a2[1] - int(movementY),
-			},
-			{
-				a1[0] - int(movementX),
-				a1[1] + int(movementY),
-			},
+	for {
+		a1New := make([]int, 2)
+		a2New := make([]int, 2)
+		if a2[0] >= a1[0] && a2[1] <= a1[1] {
+			a1New[0] = a1[0] + (int(movementX) * multiplier)
+			a1New[1] = a1[1] - (int(movementY) * multiplier)
+			a2New[0] = a2[0] - (int(movementX) * multiplier)
+			a2New[1] = a2[1] + (int(movementY) * multiplier)
 		}
+		if a2[0] >= a1[0] && a2[1] >= a1[1] {
+			a1New[0] = a1[0] + (int(movementX) * multiplier)
+			a1New[1] = a1[1] + (int(movementY) * multiplier)
+			a2New[0] = a2[0] - (int(movementX) * multiplier)
+			a2New[1] = a2[1] - (int(movementY) * multiplier)
+		}
+		if a2[0] <= a1[0] && a2[1] >= a1[1] {
+			a1New[0] = a1[0] - (int(movementX) * multiplier)
+			a1New[1] = a1[1] + (int(movementY) * multiplier)
+			a2New[0] = a2[0] + (int(movementX) * multiplier)
+			a2New[1] = a2[1] - (int(movementY) * multiplier)
+		}
+		if a2[0] <= a1[0] && a2[1] <= a1[1] {
+			a1New[0] = a1[0] - (int(movementX) * multiplier)
+			a1New[1] = a1[1] - (int(movementY) * multiplier)
+			a2New[0] = a2[0] + (int(movementX) * multiplier)
+			a2New[1] = a2[1] + (int(movementY) * multiplier)
+		}
+		a1Valid := cs.isAntinodeValid(a1New)
+		a2Valid := cs.isAntinodeValid(a2New)
+		if a1Valid {
+			invalidCount = 0
+			cs.antinodeCoords = append(cs.antinodeCoords, a1New)
+		}
+		if a2Valid {
+			invalidCount = 0
+			cs.antinodeCoords = append(cs.antinodeCoords, a2New)
+		}
+
+		if !a1Valid && !a2Valid {
+			invalidCount++
+		}
+		if invalidCount > 10 {
+			return
+		}
+
+		multiplier++
 	}
-	if a2[0] >= a1[0] && a2[1] >= a1[1] {
-		return [][]int{
-			{
-				a2[0] + int(movementX),
-				a2[1] + int(movementY),
-			},
-			{
-				a1[0] - int(movementX),
-				a1[1] - int(movementY),
-			},
-		}
+}
+
+func (cs *cityScanner) isAntinodeValid(node []int) bool {
+	if !cs.inBounds(node) {
+		return false
 	}
-	if a2[0] <= a1[0] && a2[1] >= a1[1] {
-		return [][]int{
-			{
-				a2[0] - int(movementX),
-				a2[1] + int(movementY),
-			},
-			{
-				a1[0] + int(movementX),
-				a1[1] - int(movementY),
-			},
-		}
-	}
-	if a2[0] <= a1[0] && a2[1] <= a1[1] {
-		return [][]int{
-			{
-				a2[0] - int(movementX),
-				a2[1] - int(movementY),
-			},
-			{
-				a1[0] + int(movementX),
-				a1[1] + int(movementY),
-			},
-		}
+	if containsCoordsSlice(cs.antinodeCoords, node) {
+		return false
 	}
 
-	return [][]int{}
+	return true
 }
 
 func (cs *cityScanner) inBounds(location []int) bool {
@@ -176,20 +171,4 @@ func containsCoordsSlice(slice [][]int, target []int) bool {
 		}
 	}
 	return false
-}
-
-// For testing
-func (cs *cityScanner) printAntennaMap() {
-	for key, locations := range cs.antennaCoords {
-		fmt.Printf("Antenna Type '%s':\n", key)
-		for _, coord := range locations {
-			fmt.Printf("  - Location: (%d, %d)\n", coord[0], coord[1])
-		}
-	}
-}
-
-func (cs *cityScanner) printCityMap() {
-	for i := range cs.cityMap {
-		fmt.Println(cs.cityMap[i])
-	}
 }
