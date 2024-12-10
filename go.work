@@ -9,4 +9,5 @@ use (
 	./day6-Guard-Gallivant
 	./day7-Bridge-Repair
 	./day8-Resonant-Collinearity
+	./day9-Disk-Fragmenter
 )
