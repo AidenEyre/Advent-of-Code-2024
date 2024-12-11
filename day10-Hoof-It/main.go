@@ -91,7 +91,8 @@ func (hg *hikingGuide) getTrailheadScore(coords []int) int {
 		return 0
 	}
 	if hg.topoMap[coords[1]][coords[0]] == target {
-		hg.peakCoords = append(hg.peakCoords, coords)
+		// Uncomment this for part 1 answer.
+		// hg.peakCoords = append(hg.peakCoords, coords)
 
 		return 1
 	}
