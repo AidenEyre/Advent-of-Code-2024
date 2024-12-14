@@ -18,9 +18,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	stones = blink(stones, 25)
 
-	fmt.Printf("Stonecount: '%d'\n", len(stones))
+	stonesMap := map[int]int{}
+	for _, stone := range stones {
+		stonesMap[stone] = 1
+	}
+
+	stoneCount := simulateBlinks(stonesMap, 75)
+
+	fmt.Printf("Stonecount: '%d'\n", stoneCount)
 
 	elapsed := time.Since(start) // Calculate elapsed time
 	fmt.Printf("Execution time: %d ms\n", elapsed.Milliseconds())
@@ -48,36 +54,35 @@ func loadDataIntoSlice(filename string) ([]int, error) {
 	return stones, scanner.Err()
 }
 
-func blink(stones []int, count int) []int {
-	newStones := make([]int, len(stones))
-	copy(newStones, stones)
+func simulateBlinks(stones map[int]int, blinks int) int {
+	for i := 1; i <= blinks; i++ {
+		stones = processStones(stones)
+	}
 
-	fmt.Println(newStones)
-	for i := 1; i <= count; i++ {
-		newStones = changeStones(newStones)
+	// Sum all stone counts
+	totalStones := 0
+	for _, count := range stones {
+		totalStones += count
+	}
+	return totalStones
+}
+
+func processStones(stones map[int]int) map[int]int {
+	newStones := make(map[int]int)
+
+	for stone, count := range stones {
+		if stone == 0 {
+			newStones[1] += count
+		} else if isEven(stone) {
+			split := handleEven(stone)
+			newStones[split[0]] += count
+			newStones[split[1]] += count
+		} else {
+			newStones[stone*2024] += count
+		}
 	}
 
 	return newStones
-}
-
-func changeStones(stones []int) []int {
-	changedStones := []int{}
-	for _, stone := range stones {
-		if stone == 0 {
-			changedStones = append(changedStones, handleZero())
-			continue
-		}
-		if !isEven(stone) {
-			changedStones = append(changedStones, handleDefault(stone))
-			continue
-		}
-		splitStones := handleEven(stone)
-		for _, splitStone := range splitStones {
-			changedStones = append(changedStones, splitStone)
-		}
-	}
-
-	return changedStones
 }
 
 // RULE FUNCTIONS
